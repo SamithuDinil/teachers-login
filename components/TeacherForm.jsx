@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { push, ref, serverTimestamp } from "firebase/database";
+import Image from "next/image";
+import { push, ref, serverTimestamp, set as dbSet } from "firebase/database";
 import { db } from "@/lib/firebase";
 import { uploadPhoto } from "@/lib/cloudinary";
 import { emptyForm, emptyTransfer, resizeImage, validate } from "@/lib/form";
@@ -10,10 +11,42 @@ const sections = [
   { id: "personal", title: "පෞද්ගලික තොරතුරු" },
   { id: "contact", title: "සම්බන්ධතා" },
   { id: "appointment", title: "පත්වීම් විස්තර" },
-  { id: "transfers", title: "පෙර ස්ථාන මාරු" },
+  { id: "transfers", title: "පෙර ස්ථාන මාරු", heading: "පෙර ස්ථාන මාරු ලැබූ ස්ථානය හා වර්ෂය" },
   { id: "current", title: "නව සේවා ස්ථානය" },
   { id: "exit", title: "නිදහස් කිරීම හා විශ්‍රාම" }
 ];
+
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), ms))
+  ]);
+}
+
+function Brand({ compact }) {
+  return (
+    <div className={`brand${compact ? " compact" : ""}`}>
+      <Image src="/logo.png" alt="ශ්‍රී සුමංගල විද්‍යාලයේ ලාංඡනය" width={1037} height={1011} className="logo" priority />
+      <div>
+        <p className="school">ශ්‍රී සුමංගල විද්‍යාලය</p>
+        <p className="school-en">Sri Sumangala College</p>
+      </div>
+    </div>
+  );
+}
+
+function Section({ id, heading, children }) {
+  const index = sections.findIndex((s) => s.id === id);
+  return (
+    <section id={id} className="block">
+      <header className="block-head">
+        <span className="num">{index + 1}</span>
+        <h2>{heading || sections[index].title}</h2>
+      </header>
+      {children}
+    </section>
+  );
+}
 
 function Field({ name, label, error, wide, children }) {
   return (
@@ -35,6 +68,10 @@ export default function TeacherForm() {
   const [photoPreview, setPhotoPreview] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const fileRef = useRef(null);
+  const recordRef = useRef(null);
+  const uploadedRef = useRef(null);
+
+  const requiredDone = [form.fullName.trim(), form.gender, form.nic.trim(), form.phone.trim()].filter(Boolean).length;
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -101,6 +138,7 @@ export default function TeacherForm() {
 
   async function onSubmit(e) {
     e.preventDefault();
+    if (status === "saving") return;
     const found = validate(form);
     setErrors(found);
     if (Object.keys(found).length) {
@@ -115,7 +153,10 @@ export default function TeacherForm() {
       let photo = { url: "", publicId: "" };
       if (photoFile) {
         try {
-          photo = await uploadPhoto(photoFile);
+          if (uploadedRef.current?.file !== photoFile) {
+            uploadedRef.current = { file: photoFile, data: await uploadPhoto(photoFile) };
+          }
+          photo = uploadedRef.current.data;
         } catch (err) {
           setErrorMsg(`ඡායාරූපය උඩුගත කිරීමට නොහැකි විය: ${err.message}`);
           setStatus("error");
@@ -138,11 +179,22 @@ export default function TeacherForm() {
         payload.releasePlace = "";
         payload.zonalOffice = "";
       }
-      await push(ref(db, "teachers"), payload);
+      if (!recordRef.current) recordRef.current = push(ref(db, "teachers"));
+      await withTimeout(dbSet(recordRef.current, payload), 20000);
+      recordRef.current = null;
+      uploadedRef.current = null;
       setSaved(form.fullName);
       setStatus("done");
       window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch {
+    } catch (err) {
+      const text = String(err?.code || err?.message || "").toLowerCase();
+      setErrorMsg(
+        text.includes("permission")
+          ? "දත්ත ගබඩාවට ලිවීමට අවසර නැත. Firebase Realtime Database rules පරීක්ෂා කරන්න."
+          : text.includes("timeout")
+            ? "සම්බන්ධතාව ප්‍රමාද විය. අන්තර්ජාලය පරීක්ෂා කර නැවත සුරකින්න."
+            : ""
+      );
       setStatus("error");
     }
   }
@@ -153,13 +205,17 @@ export default function TeacherForm() {
     setStatus("idle");
     setSaved("");
     setErrorMsg("");
+    recordRef.current = null;
+    uploadedRef.current = null;
     clearPhoto();
   }
 
   if (status === "done") {
     return (
-      <main className="shell done">
+      <main className="done">
         <div className="done-card" role="status">
+          <Image src="/logo.png" alt="ශ්‍රී සුමංගල විද්‍යාලයේ ලාංඡනය" width={1037} height={1011} className="done-logo" />
+          <span className="tick" aria-hidden="true">✓</span>
           <h1>සාර්ථකව සුරකින ලදී</h1>
           <p>{saved} මහතා/මහත්මියගේ තොරතුරු දත්ත ගබඩාවට එක් කරන ලදී.</p>
           <button type="button" className="primary" onClick={reset}>තවත් ගුරුවරයෙකු ඇතුළත් කරන්න</button>
@@ -169,26 +225,47 @@ export default function TeacherForm() {
   }
 
   return (
-    <main className="shell">
-      <header className="masthead">
-        <h1>ගුරු තොරතුරු 2026</h1>
-        <p>සියලු විස්තර නිවැරදිව පුරවන්න. <span className="req-mark">*</span> ලකුණ ඇති ක්ෂේත්‍ර අනිවාර්ය වේ.</p>
-      </header>
-
-      <div className="layout">
+    <div className="app">
+      <aside className="side">
+        <Brand />
+        <div className="side-title">
+          <p>ගුරු තොරතුරු පත්‍රිකාව</p>
+          <span>2026</span>
+        </div>
         <nav className="toc" aria-label="කොටස්">
-          {sections.map((s) => (
-            <a key={s.id} href={`#${s.id}`} className={active === s.id ? "on" : ""}>{s.title}</a>
+          {sections.map((s, i) => (
+            <a key={s.id} href={`#${s.id}`} className={active === s.id ? "on" : ""}>
+              <span className="dot">{i + 1}</span>
+              {s.title}
+            </a>
           ))}
         </nav>
+        <div className="progress" aria-live="polite">
+          <div className="progress-text">
+            <span>අනිවාර්ය ක්ෂේත්‍ර</span>
+            <b>{requiredDone} / 4</b>
+          </div>
+          <div className="track"><div className="fill" style={{ width: `${(requiredDone / 4) * 100}%` }} /></div>
+        </div>
+      </aside>
+
+      <main className="content">
+        <header className="page-head">
+          <h1>ගුරු තොරතුරු පත්‍රිකාව</h1>
+          <p>සියලු විස්තර නිවැරදිව පුරවන්න. <span className="req-mark">*</span> ලකුණ ඇති ක්ෂේත්‍ර අනිවාර්ය වේ.</p>
+        </header>
 
         <form onSubmit={onSubmit} noValidate>
-          <section id="personal" className="block">
-            <h2>පෞද්ගලික තොරතුරු</h2>
+          <Section id="personal">
             <div className="personal-grid">
               <div className="photo-col">
                 <button type="button" className={`photo${photoPreview ? " has" : ""}`} onClick={() => fileRef.current?.click()} aria-label="ඡායා රූපය තෝරන්න">
-                  {photoPreview ? <img src={photoPreview} alt="ඡායා රූපය" /> : <span>ඡායා රූපය<br /><small>තෝරන්න</small></span>}
+                  {photoPreview ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={photoPreview} alt="ඡායා රූපය" />
+                  ) : (
+                    <span><i aria-hidden="true">+</i>ඡායා රූපය<small>තෝරන්න</small></span>
+                  )}
                 </button>
                 <input ref={fileRef} type="file" accept="image/*" onChange={onPhoto} hidden />
                 {photoPreview && (
@@ -227,10 +304,9 @@ export default function TeacherForm() {
                 </Field>
               </div>
             </div>
-          </section>
+          </Section>
 
-          <section id="contact" className="block">
-            <h2>සම්බන්ධතා</h2>
+          <Section id="contact">
             <div className="grid">
               <Field name="permanentAddress" label="ස්ථිර ලිපිනය" wide>
                 <textarea {...bind("permanentAddress", { rows: 2 })} />
@@ -248,10 +324,9 @@ export default function TeacherForm() {
                 <input {...bind("email", { type: "email", autoComplete: "email" })} />
               </Field>
             </div>
-          </section>
+          </Section>
 
-          <section id="appointment" className="block">
-            <h2>පත්වීම් විස්තර</h2>
+          <Section id="appointment">
             <div className="grid">
               <Field name="firstAppointmentDate" label="මුල් පත්වීමේ දිනය">
                 <input {...bind("firstAppointmentDate", { type: "date" })} />
@@ -269,10 +344,9 @@ export default function TeacherForm() {
                 <input {...bind("firstAppointmentPlace")} />
               </Field>
             </div>
-          </section>
+          </Section>
 
-          <section id="transfers" className="block">
-            <h2>පෙර ස්ථාන මාරු ලැබූ ස්ථානය හා වර්ෂය</h2>
+          <Section id="transfers" heading={sections[3].heading}>
             <div className="transfers">
               {form.previousTransfers.map((t, i) => (
                 <div className="transfer" key={i}>
@@ -293,10 +367,9 @@ export default function TeacherForm() {
               ))}
               <button type="button" className="ghost" onClick={addTransfer}>+ තවත් ස්ථානයක් එක් කරන්න</button>
             </div>
-          </section>
+          </Section>
 
-          <section id="current" className="block">
-            <h2>නව සේවා ස්ථානය</h2>
+          <Section id="current">
             <div className="grid">
               <Field name="newServicePlace" label="නව සේවා ස්ථානය" wide>
                 <input {...bind("newServicePlace")} />
@@ -308,10 +381,9 @@ export default function TeacherForm() {
                 <input {...bind("newTransferDate", { type: "date" })} />
               </Field>
             </div>
-          </section>
+          </Section>
 
-          <section id="exit" className="block">
-            <h2>නිදහස් කිරීම හා විශ්‍රාම</h2>
+          <Section id="exit">
             <label className="check">
               <input type="checkbox" checked={form.released} onChange={(e) => set("released", e.target.checked)} />
               සේවයෙන් නිදහස් කර ඇත
@@ -337,7 +409,7 @@ export default function TeacherForm() {
                 <input {...bind("retirementDate", { type: "date" })} />
               </Field>
             </div>
-          </section>
+          </Section>
 
           <div className="bar">
             <p className={status === "error" ? "msg bad" : "msg"} role="status">
@@ -349,7 +421,7 @@ export default function TeacherForm() {
             </button>
           </div>
         </form>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }

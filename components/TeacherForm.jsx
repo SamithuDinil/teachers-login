@@ -7,7 +7,7 @@ import { db } from "@/lib/firebase";
 import { uploadPhoto } from "@/lib/cloudinary";
 import { emptyForm, emptyTransfer, resizeImage, validate } from "@/lib/form";
 
-const services = ["පරිපාලන සේවය", "විදුහල්පති සේවය", "ශ්‍රී ලං. ගු. සේවය"];
+const services = ["පරිපාලන සේවය", "විදුහල්පති සේවය", "ශ්‍රී ලං. ගු. සේවය", "අනධ්‍යයන සේවය"];
 
 const sections = [
   { id: "service", title: "සේවා වර්ගය හා ශ්‍රේණිය" },
@@ -226,7 +226,7 @@ export default function TeacherForm() {
       <aside className="side">
         <Brand />
         <div className="side-title">
-          <p>ගුරු තොරතුරු පත්‍රිකාව</p>
+          <p>අධ්‍යයන / අනධ්‍යයන තොරතුරු පත්‍රිකාව</p>
           <span>2026</span>
         </div>
         <nav className="toc" aria-label="කොටස්">
@@ -248,7 +248,7 @@ export default function TeacherForm() {
 
       <main className="content">
         <header className="page-head">
-          <h1>ගුරු තොරතුරු පත්‍රිකාව</h1>
+          <h1>අධ්‍යයන / අනධ්‍යයන තොරතුරු පත්‍රිකාව</h1>
           <p>සියලු විස්තර නිවැරදිව පුරවන්න. <span className="req-mark">*</span> ලකුණ ඇති ක්ෂේත්‍ර අනිවාර්ය වේ.</p>
         </header>
 

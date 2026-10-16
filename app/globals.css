@@ -42,8 +42,8 @@ body {
 .school { margin: 0; font-family: var(--font-serif); font-weight: 700; font-size: 19px; line-height: 1.35; color: var(--ink); }
 .school-en { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); letter-spacing: .01em; }
 
-.side-title { padding: 16px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.side-title p { margin: 0; font-weight: 600; font-size: 15px; }
+.side-title { padding: 16px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); display: flex; flex-direction: column; gap: 4px; }
+.side-title p { margin: 0; font-weight: 600; font-size: 15px; line-height: 1.6; }
 .side-title span { color: var(--gold); font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; }
 
 .toc { display: flex; flex-direction: column; gap: 2px; }
@@ -95,7 +95,7 @@ input:focus-visible, textarea:focus-visible { outline: none; border-color: var(-
 [data-error="true"] input, [data-error="true"] textarea { border-color: var(--err); }
 .error { margin: 0; color: var(--err); font-size: 13px; line-height: 1.5; }
 
-.options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .option { position: relative; display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--field); color: var(--label); font-weight: 500; line-height: 1.45; cursor: pointer; transition: border-color .15s, background .15s, color .15s; }
 .option:hover { border-color: var(--line-strong); }
 .option input { position: absolute; opacity: 0; pointer-events: none; }

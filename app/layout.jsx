@@ -1,8 +1,4 @@
-import { Noto_Sans_Sinhala, Noto_Serif_Sinhala } from "next/font/google";
 import "./globals.css";
-
-const sans = Noto_Sans_Sinhala({ subsets: ["sinhala", "latin"], variable: "--font-sans", display: "swap" });
-const serif = Noto_Serif_Sinhala({ subsets: ["sinhala", "latin"], variable: "--font-serif", display: "swap" });
 
 export const metadata = {
   title: "ගුරු තොරතුරු 2026",
@@ -11,7 +7,15 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="si" className={`${sans.variable} ${serif.variable}`}>
+    <html lang="si">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;500;600;700&family=Noto+Serif+Sinhala:wght@500;700&display=swap"
+        />
+      </head>
       <body>{children}</body>
     </html>
   );

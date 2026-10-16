@@ -8,6 +8,8 @@
   --maroon-dark: #5f152b;
   --tint: #f7ecef;
   --err: #b3261e;
+  --font-sans: "Noto Sans Sinhala", "Iskoola Pota", "Nirmala UI", system-ui, sans-serif;
+  --font-serif: "Noto Serif Sinhala", "Iskoola Pota", "Nirmala UI", Georgia, serif;
 }
 
 * { box-sizing: border-box; }
@@ -18,7 +20,7 @@ body {
   margin: 0;
   background: var(--paper);
   color: var(--ink);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.7;
 }
@@ -26,7 +28,7 @@ body {
 .shell { max-width: 1120px; margin: 0 auto; padding: 48px 24px 0; }
 
 .masthead { padding-bottom: 28px; border-bottom: 2px solid var(--maroon); margin-bottom: 36px; }
-.masthead h1 { font-family: var(--font-serif), serif; font-size: clamp(34px, 6vw, 56px); line-height: 1.25; margin: 0 0 8px; letter-spacing: -0.01em; }
+.masthead h1 { font-family: var(--font-serif); font-size: clamp(34px, 6vw, 56px); line-height: 1.25; margin: 0 0 8px; letter-spacing: -0.01em; }
 .masthead p { margin: 0; color: var(--muted); }
 .req-mark { color: var(--maroon); font-weight: 700; }
 
@@ -38,7 +40,7 @@ body {
 .toc a.on { color: var(--maroon); border-left-color: var(--maroon); font-weight: 600; }
 
 .block { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 28px; margin-bottom: 20px; }
-.block h2 { font-family: var(--font-serif), serif; font-size: 22px; line-height: 1.4; margin: 0 0 20px; }
+.block h2 { font-family: var(--font-serif); font-size: 22px; line-height: 1.4; margin: 0 0 20px; }
 
 .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 20px; }
 .grid + .grid { margin-top: 18px; }
@@ -110,7 +112,7 @@ button { font: inherit; }
 
 .done { display: grid; place-items: center; min-height: 100vh; padding-top: 0; }
 .done-card { background: var(--card); border: 1px solid var(--line); border-top: 4px solid var(--maroon); border-radius: 10px; padding: 36px; max-width: 520px; text-align: center; }
-.done-card h1 { font-family: var(--font-serif), serif; margin: 0 0 8px; }
+.done-card h1 { font-family: var(--font-serif); margin: 0 0 8px; }
 .done-card p { color: var(--muted); margin: 0 0 24px; }
 .done-card .primary { margin: 0; }
 

@@ -7,13 +7,15 @@ import { db } from "@/lib/firebase";
 import { uploadPhoto } from "@/lib/cloudinary";
 import { emptyForm, emptyTransfer, resizeImage, validate } from "@/lib/form";
 
+const services = ["පරිපාලන සේවය", "විදුහල්පති සේවය", "ශ්‍රී ලං. ගු. සේවය"];
+
 const sections = [
+  { id: "service", title: "සේවා වර්ගය හා ශ්‍රේණිය" },
   { id: "personal", title: "පෞද්ගලික තොරතුරු" },
   { id: "contact", title: "සම්බන්ධතා" },
   { id: "appointment", title: "පත්වීම් විස්තර" },
   { id: "transfers", title: "පෙර ස්ථාන මාරු", heading: "පෙර ස්ථාන මාරු ලැබූ ස්ථානය හා වර්ෂය" },
-  { id: "current", title: "නව සේවා ස්ථානය" },
-  { id: "exit", title: "නිදහස් කිරීම හා විශ්‍රාම" }
+  { id: "current", title: "නව සේවා ස්ථානය" }
 ];
 
 function withTimeout(promise, ms) {
@@ -35,13 +37,13 @@ function Brand({ compact }) {
   );
 }
 
-function Section({ id, heading, children }) {
+function Section({ id, children }) {
   const index = sections.findIndex((s) => s.id === id);
   return (
     <section id={id} className="block">
       <header className="block-head">
         <span className="num">{index + 1}</span>
-        <h2>{heading || sections[index].title}</h2>
+        <h2>{sections[index].heading || sections[index].title}</h2>
       </header>
       {children}
     </section>
@@ -71,7 +73,8 @@ export default function TeacherForm() {
   const recordRef = useRef(null);
   const uploadedRef = useRef(null);
 
-  const requiredDone = [form.fullName.trim(), form.gender, form.nic.trim(), form.phone.trim()].filter(Boolean).length;
+  const requiredFields = [form.serviceType, form.grade.trim(), form.fullName.trim(), form.gender, form.nic.trim(), form.phone.trim()];
+  const requiredDone = requiredFields.filter(Boolean).length;
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -173,12 +176,6 @@ export default function TeacherForm() {
         previousTransfers: form.previousTransfers.filter((t) => t.place || t.from || t.to),
         createdAt: serverTimestamp()
       };
-      if (!form.released) {
-        payload.releaseLetterNo = "";
-        payload.releaseDate = "";
-        payload.releasePlace = "";
-        payload.zonalOffice = "";
-      }
       if (!recordRef.current) recordRef.current = push(ref(db, "teachers"));
       await withTimeout(dbSet(recordRef.current, payload), 20000);
       recordRef.current = null;
@@ -243,9 +240,9 @@ export default function TeacherForm() {
         <div className="progress" aria-live="polite">
           <div className="progress-text">
             <span>අනිවාර්ය ක්ෂේත්‍ර</span>
-            <b>{requiredDone} / 4</b>
+            <b>{requiredDone} / {requiredFields.length}</b>
           </div>
-          <div className="track"><div className="fill" style={{ width: `${(requiredDone / 4) * 100}%` }} /></div>
+          <div className="track"><div className="fill" style={{ width: `${(requiredDone / requiredFields.length) * 100}%` }} /></div>
         </div>
       </aside>
 
@@ -256,6 +253,27 @@ export default function TeacherForm() {
         </header>
 
         <form onSubmit={onSubmit} noValidate>
+          <Section id="service">
+            <div className="grid">
+              <div className="field wide" data-error={errors.serviceType ? "true" : undefined}>
+                <span className="label-text">සේවා වර්ගය <b className="req-mark">*</b></span>
+                <div className="options" role="radiogroup" aria-label="සේවා වර්ගය">
+                  {services.map((service) => (
+                    <label key={service} className={`option${form.serviceType === service ? " on" : ""}`}>
+                      <input type="radio" name="serviceType" value={service} checked={form.serviceType === service} onChange={() => set("serviceType", service)} />
+                      <span className="box" aria-hidden="true" />
+                      {service}
+                    </label>
+                  ))}
+                </div>
+                {errors.serviceType && <p className="error" role="alert">{errors.serviceType}</p>}
+              </div>
+              <Field name="grade" label={<>ශ්‍රේණිය <b className="req-mark">*</b></>} error={errors.grade}>
+                <input {...bind("grade")} />
+              </Field>
+            </div>
+          </Section>
+
           <Section id="personal">
             <div className="personal-grid">
               <div className="photo-col">
@@ -346,7 +364,7 @@ export default function TeacherForm() {
             </div>
           </Section>
 
-          <Section id="transfers" heading={sections[3].heading}>
+          <Section id="transfers">
             <div className="transfers">
               {form.previousTransfers.map((t, i) => (
                 <div className="transfer" key={i}>
@@ -383,33 +401,6 @@ export default function TeacherForm() {
             </div>
           </Section>
 
-          <Section id="exit">
-            <label className="check">
-              <input type="checkbox" checked={form.released} onChange={(e) => set("released", e.target.checked)} />
-              සේවයෙන් නිදහස් කර ඇත
-            </label>
-            {form.released && (
-              <div className="grid reveal">
-                <Field name="releaseLetterNo" label="නිදහස් කිරීමේ ලිපි අංකය">
-                  <input {...bind("releaseLetterNo")} />
-                </Field>
-                <Field name="releaseDate" label="දිනය">
-                  <input {...bind("releaseDate", { type: "date" })} />
-                </Field>
-                <Field name="releasePlace" label="ස්ථානය">
-                  <input {...bind("releasePlace")} />
-                </Field>
-                <Field name="zonalOffice" label="කලාප කාර්යාලය">
-                  <input {...bind("zonalOffice")} />
-                </Field>
-              </div>
-            )}
-            <div className="grid">
-              <Field name="retirementDate" label="විශ්‍රාමලත් දිනය">
-                <input {...bind("retirementDate", { type: "date" })} />
-              </Field>
-            </div>
-          </Section>
 
           <div className="bar">
             <p className={status === "error" ? "msg bad" : "msg"} role="status">
